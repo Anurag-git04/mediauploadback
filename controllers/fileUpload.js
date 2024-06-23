@@ -1,3 +1,4 @@
+const { json } = require("express");
 const File = require("../models/File");
 const cloudinary = require("cloudinary").v2
 
@@ -35,6 +36,7 @@ function isFileTypeSupported(type, supportedTypes){
 
 async function uploadfileToCloudinary(file,folder){
     const options = {folder}
+    console.log("temp file path".file.tempFilePath)
     return await cloudinary.uploader.upload(file.tempFilePath,options);
 }
 
@@ -62,12 +64,12 @@ exports.imageUpload = async (req,res) =>{
         const response = await uploadfileToCloudinary(file,"Anurag");
         console.log(response)
         //db me entry seve karni hai
-        // const fileData = await File.create({
-        //     name, 
-        //     tags,
-        //     email,
-        //     imageUrl
-        // })
+        const fileData = await File.create({
+            name, 
+            tags,
+            email,
+            imageUrl:response.secure_url
+        })
 
         res.json({
             success:true,
@@ -77,6 +79,54 @@ exports.imageUpload = async (req,res) =>{
     }
     catch(error){
         console.error(error);
+        res.status(400).json({
+            success:false,
+            message:'Something went wrong',
+        })
+    }
+}
+
+exports.vedioUpload = async (req,res) =>{
+    try{
+        const { name, tags, email} = req.body;
+        console.log(name,tags,email);
+
+        const file = req.files.vedioFiles;
+
+        //validation
+        const supportedTypes = ["mp4","mov","png"];
+        const fileType = file.name.split('.')[1].toLowerCase();
+        console.log("File Type:",fileType);
+
+        // Todo: add a upper limit og 5 mbps
+        if(!isFileTypeSupported(fileType, supportedTypes)){
+            return res.status(400).json({
+                success:false,
+                message:'File format not supported'
+            })    
+        }
+
+        console.log("Uploading to Anurag")
+        //file format upload
+        const response = await uploadfileToCloudinary(file,"Anurag");
+        console.log(response)
+        
+        //db me entry seve karni hai
+        const fileData = await File.create({
+            name, 
+            tags,
+            email,
+            imageUrl:response.secure_url
+        })
+
+        res.json({
+            success:true,
+            message:'Vedio Successfully Uploaded',
+        })
+
+    }
+    catch(error){
+        console.error(error)
         res.status(400).json({
             success:false,
             message:'Something went wrong',
